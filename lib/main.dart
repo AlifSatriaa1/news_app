@@ -1,122 +1,268 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 
-void main() {
+import 'package:news_app/utils/constants.dart';
+import 'package:news_app/utils/app.colors.dart';
+import 'package:news_app/services/news_service.dart';
+import 'package:news_app/models/news_response.dart';
+import 'package:news_app/models/news_article.dart';
+import 'package:news_app/controllers/news_controller.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(
+    fileName: "assets/.env",
+  ); // pastikan path sesuai pubspec.yaml
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+  // ==========================================================
+  // 1. TESTING CONSTANTS
+  // ==========================================================
+  String _testConstants() {
+    return "API Key: ${Constants.apiKey.isNotEmpty ? Constants.apiKey : 'Tidak ditemukan'}\n"
+        "Base URL: ${Constants.baseUrl}\n"
+        "Default Country: ${Constants.defaultCountry}\n"
+        "Categories: ${Constants.categories.join(", ")}";
+  }
+
+  // ==========================================================
+  // 2. TESTING APP COLORS
+  // ==========================================================
+  Widget _testAppColors() {
+    return Column(
+      children: [
+        Container(
+          height: 50,
+          color: AppColors.primary,
+          child: const Center(
+            child: Text("Primary", style: TextStyle(color: Colors.white)),
+          ),
+        ),
+        Container(
+          height: 50,
+          color: AppColors.secondary,
+          child: const Center(
+            child: Text("Secondary", style: TextStyle(color: Colors.black)),
+          ),
+        ),
+        Container(
+          height: 50,
+          color: AppColors.error,
+          child: const Center(
+            child: Text("Error", style: TextStyle(color: Colors.white)),
+          ),
+        ),
+      ],
     );
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  // ==========================================================
+  // 3. TESTING NEWS SERVICE (Langsung API)
+  // ==========================================================
+  Future<String> _testNewsService() async {
+    final service = NewsService();
+    final NewsResponse response = await service.getTopHeadlines(
+      country: "us",
+      category: "technology",
+    );
+    return "Status: ${response.status}\n"
+        "Total Results: ${response.totalResults}\n"
+        "First Article: ${response.articles.isNotEmpty ? response.articles.first.title : 'No articles'}";
+  }
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
+  // ==========================================================
+  // 4. TESTING NEWS ARTICLE (Ambil Artikel Pertama dari API)
+  // ==========================================================
+  Future<NewsArticle?> _testNewsArticle({int index = 0}) async {
+    final service = NewsService();
+    final response = await service.getTopHeadlines(
+      country: "us",
+      category: "business",
+    );
 
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+    if (response.articles.isEmpty) return null;
 
-  final String title;
+    // kalau index lebih besar dari jumlah artikel, fallback ke artikel pertama
+    if (index >= response.articles.length) index = 0;
 
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+    return response.articles[index];
+  }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  // ==========================================================
+  // 5. TESTING NEWS RESPONSE (Parsing Response Full dari API)
+  // ==========================================================
+  Future<String> _testNewsResponse() async {
+    final service = NewsService();
+    final NewsResponse response = await service.getTopHeadlines(
+      country: "us",
+      category: "science",
+    );
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+    final String status = response.status;
+    final int total = response.totalResults;
+    final String firstTitle = response.articles.isNotEmpty
+        ? response.articles.first.title ?? "no title"
+        : "no articles";
+
+    return "Status: $status\n"
+        "Total Results: $total\n"
+        "First Article: $firstTitle";
+  }
+
+  // ==========================================================
+  // 6. TESTING NEWS CONTROLLER (GetX State Management)
+  // ==========================================================
+  Widget _testNewsController() {
+    final controller = Get.put(NewsController());
+    return Obx(() {
+      if (controller.isLoading) {
+        return const CircularProgressIndicator();
+      }
+      if (controller.error.isNotEmpty) {
+        return Text("Error: ${controller.error}");
+      }
+      if (controller.articles.isEmpty) {
+        return const Text("Tidak ada artikel");
+      }
+      return Expanded(
+        child: ListView(
+          children: controller.articles
+              .map((a) => ListTile(title: Text(a.title ?? "No title")))
+              .toList(),
+        ),
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    // 1. Constants → cek API key, base URL, kategori.
+    // 2. AppColors → cek warna di UI.
+    // 3. NewsService → panggil API, tampilkan status, total, first article.
+    // 4. NewsArticle → ambil artikel pertama dari API, tampilkan title + source.
+    // 5. NewsResponse → parsing full response API, tampilkan status, total, first title.
+    // 6. NewsController (GetX) → binding data ke UI, tampilkan semua artikel.
+
+    const int activeTest = 6;
+
+    const Map<int, String> testDescriptions = {
+      1: "1. Testing Constants",
+      2: "2. Testing AppColors",
+      3: "3. Testing NewsService",
+      4: "4. Testing NewsArticle",
+      5: "5. Testing NewsResponse",
+      6: "6. Testing NewsController",
+    };
+
+    final String testDescription =
+        testDescriptions[activeTest] ?? "Belum pilih test";
+
+    Widget body;
+    switch (activeTest) {
+      case 1:
+        body = Text(
+          _testConstants(),
+          style: const TextStyle(fontSize: 16, color: Colors.black),
+        );
+        break;
+      case 2:
+        body = _testAppColors();
+        break;
+      case 3:
+        body = FutureBuilder<String>(
+          future: _testNewsService(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+            if (snapshot.hasError) {
+              return Text("Error: ${snapshot.error}");
+            }
+            return Text(snapshot.data ?? "No data");
+          },
+        );
+        break;
+      case 4:
+        body = FutureBuilder<NewsArticle?>(
+          future: _testNewsArticle(index: 2), // contoh ambil artikel ke-3
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+            if (snapshot.hasError) {
+              return Text("Error: ${snapshot.error}");
+            }
+            final article = snapshot.data;
+            if (article == null) return const Text("Tidak ada artikel");
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (article.urlToImage != null)
+                  Image.network(
+                    article.urlToImage!,
+                    height: 400,
+                    fit: BoxFit.cover,
+                  ),
+                const SizedBox(height: 12),
+                Text(
+                  article.title ?? "No title",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "Sumber: ${article.source?.name ?? 'Unknown'}",
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  "URL: ${article.url ?? '-'}",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.blue),
+                ),
+              ],
+            );
+          },
+        );
+        break;
+      case 5:
+        body = FutureBuilder<String>(
+          future: _testNewsResponse(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator();
+            }
+            if (snapshot.hasError) {
+              return Text("Error: ${snapshot.error}");
+            }
+            return Text(snapshot.data ?? "No data");
+          },
+        );
+        break;
+      case 6:
+        body = _testNewsController();
+        break;
+      default:
+        body = const Text("Pilih test dengan ubah activeTest = 1..6");
+    }
+
+    return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        appBar: AppBar(title: Text("Testing News App -  $testDescription")),
+        body: Container(
+          padding: const EdgeInsets.all(16),
+          alignment: Alignment.center,
+          child: body,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
