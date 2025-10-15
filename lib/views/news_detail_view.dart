@@ -8,51 +8,92 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:news_app/models/news_article.dart';
 
-
 class NewsDetailView extends StatelessWidget {
   final NewsArticle article = Get.arguments as NewsArticle;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
+          // === HEADER IMAGE ===
           SliverAppBar(
             expandedHeight: 300,
             pinned: true,
+            elevation: 0,
+            backgroundColor: Colors.black,
             flexibleSpace: FlexibleSpaceBar(
-              background: article.urlToImage != null
-                  ? CachedNetworkImage(
-                      imageUrl: article.urlToImage!,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: AppColors.divider,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: AppColors.divider,
-                        child: Icon(
-                          Icons.image_not_supported,
-                          size: 50,
-                          color: AppColors.textHint,
+              collapseMode: CollapseMode.parallax,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Background image
+                  article.urlToImage != null
+                      ? CachedNetworkImage(
+                          imageUrl: article.urlToImage!,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) =>
+                              Center(child: CircularProgressIndicator()),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey.shade200,
+                            child: Icon(Icons.image_not_supported,
+                                color: Colors.grey, size: 60),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey.shade300,
+                          child: Icon(Icons.newspaper,
+                              size: 60, color: Colors.grey.shade600),
                         ),
-                      ),
-                    )
-                  : Container(
-                      color: AppColors.divider,
-                      child: Icon(
-                        Icons.newspaper,
-                        size: 50,
-                        color: AppColors.textHint,
+
+                  // Gradient overlay
+                  Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black87,
+                          Colors.transparent,
+                        ],
                       ),
                     ),
+                  ),
+
+                  // Title overlay
+                  Positioned(
+                    left: 16,
+                    right: 16,
+                    bottom: 20,
+                    child: Text(
+                      article.title ?? '',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        height: 1.3,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black45,
+                            blurRadius: 6,
+                            offset: Offset(0, 2),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.share),
-                onPressed: () => _shareArticle(),
+                icon: const Icon(Icons.share, color: Colors.white),
+                onPressed: _shareArticle,
               ),
               PopupMenuButton<String>(
+                color: Colors.white,
+                icon: const Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (value) {
                   switch (value) {
                     case 'copy_link':
@@ -64,21 +105,21 @@ class NewsDetailView extends StatelessWidget {
                   }
                 },
                 itemBuilder: (context) => [
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'copy_link',
                     child: Row(
                       children: [
-                        Icon(Icons.copy),
+                        Icon(Icons.copy, size: 20),
                         SizedBox(width: 8),
                         Text('Copy Link'),
                       ],
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'open_browser',
                     child: Row(
                       children: [
-                        Icon(Icons.open_in_browser),
+                        Icon(Icons.open_in_browser, size: 20),
                         SizedBox(width: 8),
                         Text('Open in Browser'),
                       ],
@@ -88,37 +129,38 @@ class NewsDetailView extends StatelessWidget {
               ),
             ],
           ),
+
+          // === ARTICLE CONTENT ===
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Source and Date
                   Row(
                     children: [
-                      if (article.source?.name != null) ...[
+                      if (article.source?.name != null)
                         Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            color: AppColors.primary.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             article.source!.name!,
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                        SizedBox(width: 12),
-                      ],
-                      if (article.publishedAt != null) ...[
+                      const SizedBox(width: 12),
+                      if (article.publishedAt != null)
                         Text(
                           timeago.format(DateTime.parse(article.publishedAt!)),
                           style: TextStyle(
@@ -126,81 +168,71 @@ class NewsDetailView extends StatelessWidget {
                             fontSize: 12,
                           ),
                         ),
-                      ],
                     ],
                   ),
-                  SizedBox(height: 16),
 
-                  // Title
-                  if (article.title != null) ...[
-                    Text(
-                      article.title!,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                        height: 1.3,
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                  ],
+                  const SizedBox(height: 16),
 
                   // Description
-                  if (article.description != null) ...[
+                  if (article.description != null)
                     Text(
                       article.description!,
                       style: TextStyle(
                         fontSize: 16,
                         color: AppColors.textSecondary,
-                        height: 1.5,
+                        height: 1.6,
                       ),
                     ),
-                    SizedBox(height: 20),
-                  ],
+
+                  const SizedBox(height: 20),
 
                   // Content
                   if (article.content != null) ...[
                     Text(
-                      'Content',
+                      'Article',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
                       article.content!,
                       style: TextStyle(
                         fontSize: 16,
                         color: AppColors.textPrimary,
-                        height: 1.6,
+                        height: 1.7,
                       ),
                     ),
-                    SizedBox(height: 24),
                   ],
 
-                  // Read More Button
-                  if (article.url != null) ...[
+                  const SizedBox(height: 30),
+
+                  // Read More
+                  if (article.url != null)
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _openInBrowser,
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text(
                           'Read Full Article',
                           style: TextStyle(fontSize: 16),
                         ),
+                        onPressed: _openInBrowser,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
                       ),
                     ),
-                  ],
 
-                  SizedBox(height: 32),
+                  const SizedBox(height: 50),
                 ],
               ),
             ),
@@ -210,6 +242,7 @@ class NewsDetailView extends StatelessWidget {
     );
   }
 
+  // === SHARE ===
   void _shareArticle() {
     if (article.url != null) {
       Share.share(
@@ -219,18 +252,24 @@ class NewsDetailView extends StatelessWidget {
     }
   }
 
+  // === COPY LINK ===
   void _copyLink() {
     if (article.url != null) {
       Clipboard.setData(ClipboardData(text: article.url!));
       Get.snackbar(
-        'Success',
-        'Link copied to clipboard',
+        'Link Copied ✅',
+        'You can now paste it anywhere',
         snackPosition: SnackPosition.BOTTOM,
-        duration: Duration(seconds: 2),
+        backgroundColor: Colors.black87,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(12),
+        borderRadius: 12,
+        duration: const Duration(seconds: 2),
       );
     }
   }
 
+  // === OPEN IN BROWSER ===
   void _openInBrowser() async {
     if (article.url != null) {
       final Uri url = Uri.parse(article.url!);
@@ -238,9 +277,13 @@ class NewsDetailView extends StatelessWidget {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Error',
-          'Could not open the link',
+          'Error ❌',
+          'Could not open the article',
           snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(12),
+          borderRadius: 12,
         );
       }
     }

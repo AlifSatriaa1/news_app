@@ -20,4 +20,7 @@ class AppColors {
   // Additional colors
   static const Color divider = Color(0xFFE0E0E0);
   static const Color cardShadow = Color(0x1A000000);
+
+  // background colors
+  static const Color backgroundLight = Color(0xFFF9F9F9);
 }
