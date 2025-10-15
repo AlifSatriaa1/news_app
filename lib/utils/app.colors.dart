@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class AppColors {
@@ -22,4 +21,3 @@ class AppColors {
   static const Color divider = Color(0xFFE0E0E0);
   static const Color cardShadow = Color(0x1A000000);
 }
-    

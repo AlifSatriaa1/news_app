@@ -1,4 +1,3 @@
-
 class NewsArticle {
   final String? title;
   final String? description;
@@ -57,5 +56,3 @@ class Source {
     return {'id': id, 'name': name};
   }
 }
-
-    

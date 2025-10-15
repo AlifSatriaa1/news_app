@@ -2,52 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:news_app/utils/app.colors.dart'; // Ensure this is defined with colors like primary, textPrimary, etc.
+import 'package:news_app/utils/app.colors.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:news_app/models/news_article.dart';
 
-class NewsDetailView extends StatelessWidget {
-  // Use a more specific color palette for better visual appeal
-  static const Color primaryColor = Colors.deepPurple;
-  static const Color accentColor = Color(0xFFFDD835); // A bright yellow accent
 
+class NewsDetailView extends StatelessWidget {
   final NewsArticle article = Get.arguments as NewsArticle;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: CustomScrollView(
         slivers: [
-          // Change 1: Enhance SliverAppBar for a dramatic hero image effect
           SliverAppBar(
-            expandedHeight: 350, // Slightly taller expanded height
+            expandedHeight: 300,
             pinned: true,
-            // Use system UI overlay for a transparent status bar look
-            systemOverlayStyle: SystemUiOverlayStyle(
-              statusBarIconBrightness: Brightness.light,
-              statusBarColor: Colors.transparent,
-            ),
-            iconTheme: IconThemeData(color: Colors.white), // Icons are white over the dark image
-            backgroundColor: primaryColor, // Solid color when collapsed
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: EdgeInsets.only(left: 16, bottom: 16),
-              // Optional: Add a subtle title to the collapsed app bar
-              title: Text(
-                article.title != null ? (article.title!.length > 30 ? '${article.title!.substring(0, 27)}...' : article.title!) : 'News Detail',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              background: _buildImageHero(),
+              background: article.urlToImage != null
+                  ? CachedNetworkImage(
+                      imageUrl: article.urlToImage!,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: AppColors.divider,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AppColors.divider,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: 50,
+                          color: AppColors.textHint,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: AppColors.divider,
+                      child: Icon(
+                        Icons.newspaper,
+                        size: 50,
+                        color: AppColors.textHint,
+                      ),
+                    ),
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.share, color: Colors.white),
+                icon: Icon(Icons.share),
                 onPressed: () => _shareArticle(),
               ),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (value) {
                   switch (value) {
                     case 'copy_link':
@@ -63,7 +68,7 @@ class NewsDetailView extends StatelessWidget {
                     value: 'copy_link',
                     child: Row(
                       children: [
-                        Icon(Icons.copy, color: primaryColor),
+                        Icon(Icons.copy),
                         SizedBox(width: 8),
                         Text('Copy Link'),
                       ],
@@ -73,7 +78,7 @@ class NewsDetailView extends StatelessWidget {
                     value: 'open_browser',
                     child: Row(
                       children: [
-                        Icon(Icons.open_in_new, color: primaryColor), // Changed icon to open_in_new
+                        Icon(Icons.open_in_browser),
                         SizedBox(width: 8),
                         Text('Open in Browser'),
                       ],
@@ -81,7 +86,6 @@ class NewsDetailView extends StatelessWidget {
                   ),
                 ],
               ),
-              SizedBox(width: 8),
             ],
           ),
           SliverToBoxAdapter(
@@ -90,85 +94,113 @@ class NewsDetailView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Change 2: Title - Larger, bolder, and better separation
+                  // Source and Date
+                  Row(
+                    children: [
+                      if (article.source?.name != null) ...[
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            article.source!.name!,
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                      ],
+                      if (article.publishedAt != null) ...[
+                        Text(
+                          timeago.format(DateTime.parse(article.publishedAt!)),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  SizedBox(height: 16),
+
+                  // Title
                   if (article.title != null) ...[
                     Text(
                       article.title!,
                       style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900, // Very bold
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
-                        height: 1.2,
+                        height: 1.3,
                       ),
                     ),
                     SizedBox(height: 16),
                   ],
 
-                  // Change 3: Source and Date - Use a styled Author/Source chip
-                  _buildSourceAndDateRow(),
-                  SizedBox(height: 20),
-
-                  // Change 4: Description - Prominent lead-in text
-                  if (article.description != null && article.description != article.title) ...[
+                  // Description
+                  if (article.description != null) ...[
                     Text(
                       article.description!,
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500, // Medium weight for readability
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        fontSize: 16,
+                        color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
-                    Divider(height: 40, thickness: 1, color: AppColors.divider.withOpacity(0.5)),
+                    SizedBox(height: 20),
                   ],
 
-                  // Change 5: Content - Clear text body
+                  // Content
                   if (article.content != null) ...[
                     Text(
-                      'Full Story', // Better label than 'Content'
+                      'Content',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 12),
+                    SizedBox(height: 8),
                     Text(
-                      // Clean up the content, often includes an ellipsis and character count
-                      article.content!.replaceAll(RegExp(r'\[\+\d+ chars\]$'), ''),
+                      article.content!,
                       style: TextStyle(
                         fontSize: 16,
                         color: AppColors.textPrimary,
                         height: 1.6,
                       ),
                     ),
-                    SizedBox(height: 32),
+                    SizedBox(height: 24),
                   ],
 
-                  // Change 6: Read More Button - Primary action at the bottom
+                  // Read More Button
                   if (article.url != null) ...[
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
+                      child: ElevatedButton(
                         onPressed: _openInBrowser,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryColor,
-                          padding: EdgeInsets.symmetric(vertical: 18),
+                          padding: EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          elevation: 4,
                         ),
-                        icon: Icon(Icons.launch, color: Colors.white),
-                        label: Text(
-                          'Read Full Article on Web',
-                          style: TextStyle(fontSize: 17, color: Colors.white, fontWeight: FontWeight.bold),
+                        child: Text(
+                          'Read Full Article',
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
                   ],
 
-                  SizedBox(height: 40),
+                  SizedBox(height: 32),
                 ],
               ),
             ),
@@ -178,98 +210,10 @@ class NewsDetailView extends StatelessWidget {
     );
   }
 
-  // --- Helper Methods/Widgets ---
-
-  Widget _buildImageHero() {
-    return article.urlToImage != null
-        ? Stack(
-            fit: StackFit.expand,
-            children: [
-              CachedNetworkImage(
-                imageUrl: article.urlToImage!,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: AppColors.divider,
-                  child: Center(child: CircularProgressIndicator(color: primaryColor)),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppColors.divider,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 60,
-                    color: AppColors.textHint,
-                  ),
-                ),
-              ),
-              // Change 7: Add a subtle gradient overlay on the image for readability of top bar icons
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment(0.0, -1.0),
-                    end: Alignment(0.0, 0.4),
-                    colors: <Color>[
-                      Color(0x60000000),
-                      Color(0x00000000),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          )
-        : Container(
-            color: primaryColor.withOpacity(0.8),
-            child: Icon(
-              Icons.newspaper,
-              size: 80,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          );
-  }
-
-  Widget _buildSourceAndDateRow() {
-    return Row(
-      children: [
-        // Source Chip
-        if (article.source?.name != null) ...[
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: primaryColor.withOpacity(0.3)), // Subtle border
-            ),
-            child: Text(
-              article.source!.name!,
-              style: TextStyle(
-                color: primaryColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          SizedBox(width: 12),
-        ],
-        
-        // Date Text
-        if (article.publishedAt != null) ...[
-          Icon(Icons.access_time, size: 14, color: AppColors.textSecondary),
-          SizedBox(width: 4),
-          Text(
-            timeago.format(DateTime.parse(article.publishedAt!)),
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
   void _shareArticle() {
     if (article.url != null) {
       Share.share(
-        'Read this article: ${article.title ?? 'News Article'}\n\n${article.url!}',
+        '${article.title ?? 'Check out this news'}\n\n${article.url!}',
         subject: article.title,
       );
     }
@@ -279,14 +223,10 @@ class NewsDetailView extends StatelessWidget {
     if (article.url != null) {
       Clipboard.setData(ClipboardData(text: article.url!));
       Get.snackbar(
-        'Copied!',
-        'Article link copied to clipboard.',
-        icon: Icon(Icons.check_circle, color: Colors.white),
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+        'Success',
+        'Link copied to clipboard',
         snackPosition: SnackPosition.BOTTOM,
         duration: Duration(seconds: 2),
-        margin: EdgeInsets.all(10),
       );
     }
   }
@@ -299,10 +239,8 @@ class NewsDetailView extends StatelessWidget {
       } else {
         Get.snackbar(
           'Error',
-          'Could not open the link: ${article.url}',
+          'Could not open the link',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppColors.error,
-          colorText: Colors.white,
         );
       }
     }
