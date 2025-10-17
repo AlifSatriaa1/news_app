@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:news_app/utils/app.colors.dart';
 
-
 class CategoryChip extends StatelessWidget {
   final String label;
   final bool isSelected;
@@ -16,23 +15,72 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (_) => onTap(),
-        backgroundColor: Colors.grey[100],
-        selectedColor: AppColors.primary.withOpacity(0.2),
-        checkmarkColor: AppColors.primary,
-        labelStyle: TextStyle(
-          color: isSelected ? AppColors.primary : AppColors.textSecondary,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: isSelected ? AppColors.primary : Colors.transparent,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      margin: const EdgeInsets.only(right: 10),
+      decoration: BoxDecoration(
+        gradient: isSelected
+            ? LinearGradient(
+                colors: [
+                  AppColors.primary.withOpacity(0.9),
+                  AppColors.primary.withOpacity(0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : LinearGradient(
+                colors: [
+                  Colors.grey.shade100,
+                  Colors.grey.shade200,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : [],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        splashColor: AppColors.primary.withOpacity(0.2),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                child: isSelected
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 18,
+                        color: Colors.white,
+                        key: const ValueKey('icon_selected'),
+                      )
+                    : const SizedBox(key: ValueKey('icon_none')),
+              ),
+              if (isSelected) const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color:
+                      isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight:
+                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  letterSpacing: 0.3,
+                  fontSize: 14.5,
+                ),
+              ),
+            ],
           ),
         ),
       ),

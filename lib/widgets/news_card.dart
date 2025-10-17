@@ -9,25 +9,32 @@ class NewsCard extends StatelessWidget {
   final VoidCallback onTap;
 
   const NewsCard({Key? key, required this.article, required this.onTap})
-    : super(key: key);
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shadowColor: AppColors.cardShadow,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
+            // 🖼 Image section
             if (article.urlToImage != null)
               ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 child: CachedNetworkImage(
                   imageUrl: article.urlToImage!,
                   height: 200,
@@ -36,44 +43,35 @@ class NewsCard extends StatelessWidget {
                   placeholder: (context, url) => Container(
                     height: 200,
                     color: AppColors.divider,
-                    child: Center(child: CircularProgressIndicator()),
+                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
                   errorWidget: (context, url, error) => Container(
                     height: 200,
                     color: AppColors.divider,
-                    child: Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 40,
-                        color: AppColors.textHint,
-                      ),
-                    ),
+                    child: const Icon(Icons.broken_image, size: 48, color: Colors.grey),
                   ),
                 ),
               ),
 
+            // 📰 Text section
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Source and Date
+                  // 🕒 Source & Time
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (article.source?.name != null) ...[
-                        Expanded(
-                          child: Text(
-                            article.source!.name!,
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                      if (article.source?.name != null)
+                        Text(
+                          article.source!.name!,
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(width: 8),
-                      ],
                       if (article.publishedAt != null)
                         Text(
                           timeago.format(DateTime.parse(article.publishedAt!)),
@@ -84,36 +82,52 @@ class NewsCard extends StatelessWidget {
                         ),
                     ],
                   ),
-                  SizedBox(height: 12),
 
-                  // Title
+                  const SizedBox(height: 10),
+
+                  // 🧾 Title
                   if (article.title != null)
                     Text(
                       article.title!,
                       style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
-                        height: 1.3,
+                        height: 1.4,
                       ),
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
 
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                  // Description
+                  // 📄 Description
                   if (article.description != null)
                     Text(
                       article.description!,
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 14,
-                        height: 1.4,
+                        height: 1.5,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+
+                  const SizedBox(height: 12),
+
+                  // ➡ Read More link style
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Read more →',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
